@@ -1,0 +1,25 @@
+### pepline for analysis of SPAR-seq results on PacBio platform
+
+### clean reads of Carm1 were extracted from CCS reads
+python Carm1_SPAR_reads_extract.py m4Cpa1C2C.fastq all.ccs.pass.txt carm_BC.fa
+python Carm1_SPAR_reads_extract.py mGVBDMI.fastq all.ccs.pass.txt carm_BC.fa
+python Carm1_SPAR_reads_extract.py mMII1C2C.fastq all.ccs.pass.txt carm_BC.fa
+
+### change .out.txt to .fastq
+cat /home/ywzhang/PAIso-seq_carm1_20220703/m4Cpa1C2C.out.txt | awk '{print "@"$1":"$2":"$3"\n"$5"\n+\n"$6}' > m4Cpa1C2C.fq &
+cat /home/ywzhang/PAIso-seq_carm1_20220703/mGVBDMI.out.txt   | awk '{print "@"$1":"$2":"$3"\n"$5"\n+\n"$6}' > mGVBDMI.fq &
+cat /home/ywzhang/PAIso-seq_carm1_20220703/mMII1C2C.out.txt  | awk '{print "@"$1":"$2":"$3"\n"$5"\n+\n"$6}' > mMII1C2C.fq &
+
+### count WT/E3a reads
+python ~/scripts/Carm1_E3a_analysis.py m4Cpa1C2C.fq > m4Cpa1C2C.E3a_analysis.txt &
+python ~/scripts/Carm1_E3a_analysis.py mGVBDMI.fq   > mGVBDMI.E3a_analysis.txt &
+python ~/scripts/Carm1_E3a_analysis.py mMII1C2C.fq  > mMII1C2C.E3a_analysis.txt &
+
+cat m4Cpa1C2C.E3a_analysis.txt | awk '$4=="WT"' | awk '{print $1"\t"$4}' | awk -F ':' '{print substr($3,6)}' | sort | uniq -c
+cat mGVBDMI.E3a_analysis.txt   | awk '$4=="WT"' | awk '{print $1"\t"$4}' | awk -F ':' '{print substr($3,6)}' | sort | uniq -c
+cat mMII1C2C.E3a_analysis.txt  | awk '$4=="WT"' | awk '{print $1"\t"$4}' | awk -F ':' '{print substr($3,6)}' | sort | uniq -c
+
+### count AS reads
+python ~/scripts/Carm1_AS_analysis.py m4Cpa1C2C.fq ../01.align/AS_barcode.fa > m4Cpa1C2C.AS_analysis.txt &
+python ~/scripts/Carm1_AS_analysis.py mGVBDMI.fq   ../01.align/AS_barcode.fa > mGVBDMI.AS_analysis.txt &
+python ~/scripts/Carm1_AS_analysis.py mMII1C2C.fq  ../01.align/AS_barcode.fa > mMII1C2C.AS_analysis.txt &
