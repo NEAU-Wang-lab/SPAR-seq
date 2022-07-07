@@ -1,0 +1,41 @@
+### pepline for analysis of SPAR-seq results on PE300 platform
+
+### establish the 00.data/ for original data storage, and 01.align/ for data proceccing
+mkdir 00.data
+mkdir 01.align
+
+### make sample.txt containing the names for folder and file
+ls 00.data/*/*_1.fq | sed 's#/#\t#g' | sed 's/_1.fq//g' > 01.align/sample.txt
+
+### pear
+cd ../01.align
+cat sample.txt | while read a b; do mkdir ${a}/; done
+cat sample.txt | while read a b; do echo 'pear -f ../00.data/'${a}'/'${b}'_1.fq -r ../00.data/'${a}'/'${b}'_2.fq -o '${a}'/'${b}'.fq'; done > pear.sh
+ParaFly -c pear.sh -CPU 30 &
+
+### index
+bowtie2-build sequence.fa PE300
+
+### alignment
+cat sample.txt | while read a b; do bowtie2 -x PE300 -U ${a}/${b}.fq.assembled.fastq -S ${a}/${b}.AS.sam -p 30 2> ${a}/${b}.AS.bowtie2.log; done
+cat sample.txt | while read a b; do samtools view -bS ${a}/${b}.AS.sam | samtools sort - > ${a}/${b}.AS.sort.bam; done
+
+### count AS reads
+cat sample.txt | while read a b; do samtools view ${a}/${b}.AS.sort.bam | awk3 | sort | uniq -c | awk '{print $2"\t"$1}' | awk '{for(i=1;i<=NF;i=i+1){a[NR,i]=$i}}END{for(j=1;j<=NF;j++){str=a[1,j];for(i=2;i<=NR;i++){str=str " " a[i,j]}print str}}'; done
+
+### count WT/E3a reads
+###### merge the _1.fq and _2.fq to one .fq file
+cat sample.txt | while read a b; do echo 'python /home/wjq/scripts/2fq_to_1fq.py '${a}'/'${b}'.fq.unassembled.forward.fastq '${a}'/'${b}'.fq.unassembled.reverse.fastq '${b}' '; done > 2fq_to_1fq.sh
+ParaFly -c 2fq_to_1fq.sh -CPU 30 &
+cat sample.txt | while read a b; do mv ${b}_merge.fq ${a}/; done
+
+###### analysis the read is from E3a or not
+cat sample.txt | while read a b; do echo 'python /home/wjq/scripts/Carm1_E3a_analysis.py '${a}'/'${b}'_merge.fq > '${a}'/'${b}'.E3a_analysis.txt'; done > E3a_analysis.sh
+ParaFly -c E3a_analysis.sh -CPU 30 &
+
+###### count WT/E3a reads
+cat sample.txt | while read a b; do cat ${a}/${b}.E3a_analysis.txt | awk '$4=="E3a"' | wc -l; done 
+cat sample.txt | while read a b; do cat ${a}/${b}.E3a_analysis.txt | awk '$4=="WT"' | wc -l; done
+
+
+         
