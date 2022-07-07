@@ -10,9 +10,6 @@ def revComp(s):
         revCDict = {'G':'C','C':'G','T':'A','A':'T','N':'N','-':'-'}
         return ''.join([revCDict[x] for x in s])[::-1]
 
-
-
-
 def splitCCSs(read_name, read_pass, barcode_dict, seq, qual):
         carm = []
         all_bc_loci = [(0, 0)]
